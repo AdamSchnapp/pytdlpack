@@ -847,7 +847,13 @@ class TdlpDataset:
                 # build out a tdlpack DataRecord with appropriate metadata
                 idlist = [tdlpid.word1, tdlpid.word2, tdlpid.word3, tdlpid.word4]
                 if var_constants is None:
-                    plain = 'NO VAR MATCH'
+                    # look for plain text from encoding key "tdlp_plain"
+                    if "tdlp_plain" in da.encoding:
+                        plain = da.encoding["tdlp_plain"]
+                        if len(plain) > 32:
+                            raise ValueError(f"plain text {plain} exceeds 32 characters")
+                    else:
+                        plain = 'NO PLAIN TEXT'
                     # let dec_scale allow for min_unique values in the space between the max and min
                     datamax = np.nanmax(data)
                     datamin = np.nanmin(data)
@@ -858,10 +864,14 @@ class TdlpDataset:
                         range_place = np.floor(log10range)
                         dec_scale = int(np.ceil(np.log10(min_unique)) - range_place)
                 else:
+                    # TODO decide on whether to implement getting plain text or dec_scale from MOS2K constants file
+                    # or remove this capability
+                    raise NotImplementedError("var_constants is not implemented")
                     plain = var_constants.loc[tdlpid.cccfff]['plain']
                     dec_scale = var_constants.loc[tdlpid.cccfff]['iscale']
+
                 date = da.date.data.squeeze()[()]
-                rec = make_record(template_rec, idlist, data, 'PLAIN TEXT', date)
+                rec = make_record(template_rec, idlist, data, plain, date)
                 rec.pack(dec_scale=dec_scale)
                 logger.debug(f'writing {date}, {idlist} with dec_scale: {dec_scale}')
                 f.write(rec)
@@ -876,14 +886,14 @@ class TdlpDataarray:
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
 
-    def to_tdlpack(self, file, mode='w-', compute: bool = True,):
+    def to_tdlpack(self, file, mode='w-', compute: bool = True, **kwargs):
         '''
         mode : {"w", "w-"}, optional, default: "w-"
         Persistence mode: "w" means create (overwrite if exists);
         "w-" means create (fail if exists);
         '''
         ds = self._obj.to_dataset()
-        ds.tdlp.to_tdlpack(file, mode=mode, compute=compute)
+        ds.tdlp.to_tdlpack(file, mode=mode, compute=compute, **kwargs)
 
 def make_record(template, rec_id, data, plain, date):
     rec = copy(template)
