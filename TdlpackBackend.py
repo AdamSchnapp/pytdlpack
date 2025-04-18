@@ -762,6 +762,17 @@ class TdlpDataset:
         else:
             raise ValueError("data does not have 'x' and 'y' or 'station' dims for writing to tdlp grid or station formats")
 
+        # rename coordinates to tdlp_name attribute value
+        for coord in self._obj.coords:
+            if 'tdlp_name' in self._obj[coord].attrs:
+                if self._obj[coord].attrs['tdlp_name'] not in self._obj.coords:
+                    self._obj = self._obj.rename({coord : self._obj[coord].attrs['tdlp_name']})
+
+        # make date and lead into dimensions if they are not
+        if 'lead' not in self._obj.dims:
+            self._obj = self._obj.expand_dims("lead")
+        if 'date' not in self._obj.dims:
+            self._obj = self._obj.expand_dims("date")
 
         possible_multi_var_keys=['ccc','fff','b','dd','v','llll','uuuu','t','o','i','s','g']
         multi_var_keys = [k for k in possible_multi_var_keys if not self._iscoord(k)]
