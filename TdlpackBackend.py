@@ -861,8 +861,8 @@ class TdlpDataset:
                     # look for plain text from encoding key "tdlp_plain"
                     if "tdlp_plain" in da.encoding:
                         plain = da.encoding["tdlp_plain"]
-                        if len(plain) > 32:
-                            raise ValueError(f"plain text {plain} exceeds 32 characters")
+                        if len(plain) > pytdlpack.NCHAR_PLAIN:
+                            raise ValueError(f"plain text '{plain}' exceeds {pytdlpack.NCHAR_PLAIN} characters")
                     else:
                         plain = 'NO PLAIN TEXT'
                     # let dec_scale allow for min_unique values in the space between the max and min
